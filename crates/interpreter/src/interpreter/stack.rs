@@ -86,10 +86,7 @@ impl Stack {
     /// # Safety
     /// The caller is responsible to check length of array
     pub unsafe fn pop_unsafe(&mut self) -> U256 {
-        let mut len = self.data.len();
-        len -= 1;
-        self.data.set_len(len);
-        *self.data.get_unchecked(len)
+        self.data.pop().unwrap_unchecked()
     }
 
     #[inline(always)]
@@ -108,12 +105,9 @@ impl Stack {
     /// # Safety
     /// The caller is responsible to check length of array
     pub unsafe fn pop_top_unsafe(&mut self) -> (U256, &mut U256) {
-        let mut len = self.data.len();
-        let pop = *self.data.get_unchecked(len - 1);
-        len -= 1;
-        self.data.set_len(len);
-
-        (pop, self.data.get_unchecked_mut(len - 1))
+        let pop = self.pop_unsafe();
+        let top = self.top_unsafe();
+        (pop, top)
     }
 
     #[inline(always)]
@@ -122,13 +116,11 @@ impl Stack {
     /// # Safety
     /// The caller is responsible to check length of array
     pub unsafe fn pop2_top_unsafe(&mut self) -> (U256, U256, &mut U256) {
-        let mut len = self.data.len();
-        let pop1 = *self.data.get_unchecked(len - 1);
-        len -= 2;
-        let pop2 = *self.data.get_unchecked(len);
-        self.data.set_len(len);
+        let pop1 = self.pop_unsafe();
+        let pop2 = self.pop_unsafe();
+        let top = self.top_unsafe();
 
-        (pop1, pop2, self.data.get_unchecked_mut(len - 1))
+        (pop1, pop2, top)
     }
 
     #[inline(always)]
@@ -137,13 +129,9 @@ impl Stack {
     /// # Safety
     /// The caller is responsible to check length of array
     pub unsafe fn pop2_unsafe(&mut self) -> (U256, U256) {
-        let mut len = self.data.len();
-        len -= 2;
-        self.data.set_len(len);
-        (
-            *self.data.get_unchecked(len + 1),
-            *self.data.get_unchecked(len),
-        )
+        let pop1 = self.pop_unsafe();
+        let pop2 = self.pop_unsafe();
+        (pop1, pop2)
     }
 
     #[inline(always)]
@@ -152,14 +140,11 @@ impl Stack {
     /// # Safety
     /// The caller is responsible to check length of array
     pub unsafe fn pop3_unsafe(&mut self) -> (U256, U256, U256) {
-        let mut len = self.data.len();
-        len -= 3;
-        self.data.set_len(len);
-        (
-            *self.data.get_unchecked(len + 2),
-            *self.data.get_unchecked(len + 1),
-            *self.data.get_unchecked(len),
-        )
+        let pop1 = self.pop_unsafe();
+        let pop2 = self.pop_unsafe();
+        let pop3 = self.pop_unsafe();
+
+        (pop1, pop2, pop3)
     }
 
     #[inline(always)]
@@ -168,15 +153,12 @@ impl Stack {
     /// # Safety
     /// The caller is responsible to check length of array
     pub unsafe fn pop4_unsafe(&mut self) -> (U256, U256, U256, U256) {
-        let mut len = self.data.len();
-        len -= 4;
-        self.data.set_len(len);
-        (
-            *self.data.get_unchecked(len + 3),
-            *self.data.get_unchecked(len + 2),
-            *self.data.get_unchecked(len + 1),
-            *self.data.get_unchecked(len),
-        )
+        let pop1 = self.pop_unsafe();
+        let pop2 = self.pop_unsafe();
+        let pop3 = self.pop_unsafe();
+        let pop4 = self.pop_unsafe();
+
+        (pop1, pop2, pop3, pop4)
     }
 
     #[inline]
@@ -223,7 +205,8 @@ impl Stack {
         } else {
             // Safety: check for out of bounds is done above and it makes this safe to do.
             unsafe {
-                *self.data.get_unchecked_mut(len) = *self.data.get_unchecked(len - N);
+                let ptr = self.data.as_mut_ptr().add(len);
+                core::ptr::copy_nonoverlapping(ptr.sub(N), ptr, 1);
                 self.data.set_len(len + 1);
             }
             None
